@@ -1,6 +1,6 @@
 module Afpg
-       ( someFunc
-       ) where
+  ( module A
+  ) where
 
-someFunc :: IO ()
-someFunc = putStrLn ("someFunc" :: String)
+import Prelude hiding (sum,product,any,all,min,max,foldMap)
+import Afpg.Examples as A

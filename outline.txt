@@ -1,0 +1,26 @@
+intro to haskell
+  - features of the languages 
+  - syntax
+  - types
+  - typeclasses
+
+intro to semigroups/monoids
+  - semigroups
+   
+  - monoids
+  - simple instances (list,(num,num),(bool,bool))
+
+examples of semigroups/monoids
+  - Sum/Product
+  - Any/All
+  - Min/Max
+  - First/Last
+  - Dual
+  - Endo
+  - (->)
+  - Predicate, Comparison, Equivalence
+  - Ordering
+  - Writer
+  - IO
+  - Foldable (foldMap)
+  - foldCommuteIO
