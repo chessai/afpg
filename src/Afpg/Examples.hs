@@ -1,5 +1,6 @@
 {-# language BangPatterns #-}
 {-# language LambdaCase #-}
+{-# language OverloadedStrings #-}
 {-# language ScopedTypeVariables #-}
 
 module Afpg.Examples where
@@ -11,10 +12,9 @@ import Data.Functor.Contravariant
 
 import Control.Monad.Trans.Writer
 
-import Data.Foldable (foldlM)
-import Control.Concurrent
-import Control.Concurrent.MVar
-import Control.Exception
+import Colonnade
+import Lucid.Colonnade
+import Lucid
 
 --foldMap :: Monoid m => (a -> m) -> [a] -> m
 --foldMap f [] = mempty
@@ -146,33 +146,49 @@ combineIO x y = do
 
 exIO1 = foldMap (print . Sum) [1..100]
 
-{-
-foldCommuteIO :: forall t m a. (Foldable t, Monoid m)
-  => (a -> IO m)
-  -> t a
-  -> IO m
-foldCommuteIO f xs = do
-  var <- newEmptyMVar
-  total <- foldlM
-    (\ !n a -> forkIO_
-         (try (f a) >>= putMVar var)
-         *> pure (n + 1)
-    ) 0 xs
-  let go2 :: Int -> SomeException -> IO (Either SomeException m)
-      go2 !n e = if n < total
-        then takeMVar var *> go2 (n + 1) e
-        else pure (Left e)
-  let go :: Int -> m -> IO (Either SomeException m)
-      go !n !m = if n < total
-        then takeMVar var >>= \case
-          Left r -> go2 (n + 1) r
-          Right m' -> go (n + 1) (m <> m')
-        else pure (Right m)
-  x <- go 0 mempty
-  case x of
-    Left e -> error $ "Exception encountered:\n " <> show e
-    Right m -> pure m
+newtype Sort a = Sort { getSorted :: [a] }
+  deriving (Show, Eq)
 
-forkIO_ :: IO () -> IO ()
-forkIO_ x = () <$ forkIO x
--}
+instance Ord a => Semigroup (Sort a) where
+  Sort a <> Sort b = Sort (mergeSort a b)
+
+instance Ord a => Monoid (Sort a) where
+  mempty = Sort []
+
+mergeSort :: Ord a => [a] -> [a] -> [a]
+mergeSort [] ys = ys
+mergeSort xs [] = xs
+mergeSort (x:xs) (y:ys)
+  | y < x = y : mergeSort (x : xs) ys
+mergeSort (x:xs) ys = x : mergeSort xs ys
+
+-- | Smart constructor for 'Sort'
+toSort :: Ord a => [a] -> Sort a
+toSort = foldMap (Sort . (:[]))
+
+exSort1 = toSort [1,5,2,3] <> toSort [10,7,8,4]
+
+exSort2 = foldMap (toSort . pure) [5,2,3,1,0,8]
+
+data Person = Person
+  { name :: String
+  , age :: Int
+  , height :: Int
+  , weight :: Int
+  }
+
+colPerson0 = headed "Name" (toHtml . name)
+colPerson1 = headed "Age"  (toHtml . show . age)
+colPerson2 = headed "Height" (toHtml . show . height)
+colPerson3 = headed "Weight" (toHtml . show . weight)
+
+colPerson :: Colonnade Headed Person (Html ())
+colPerson = mconcat [colPerson0, colPerson1, colPerson2, colPerson3]
+
+attributes = []
+
+people = [Person "Bob" 50 72 150, Person "Alice" 48 67 120]
+
+peopleTable = encodeHtmlTable attributes colPerson people
+
+makePeople = renderToFile "index.html" peopleTable
