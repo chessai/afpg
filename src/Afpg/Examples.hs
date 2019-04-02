@@ -17,6 +17,8 @@ import Lucid.Colonnade
 import Lucid
 import Lucid.Base
 
+import System.Process
+
 --foldMap :: Monoid m => (a -> m) -> [a] -> m
 --foldMap f [] = mempty
 --foldMap f (x:xs) = f x <> foldMap f xs
@@ -229,8 +231,13 @@ someAttributes = fmap (uncurry makeAttribute)
 
 people = [Person "Bob" 50 72 150, Person "Alice" 48 67 120]
 
-peopleTable = encodeHtmlTable noAttributes colPerson people
+peopleTable = encodeHtmlTable someAttributes colPerson people
 
-makePeople = renderToFile "index.html" peopleTable
+htmlOutput = "index.html"
+
+makePeople = mconcat
+  [ renderToFile htmlOutput peopleTable
+  , () <$ readProcess "xdg-open" [htmlOutput] ""
+  ]
 
 ---------------------------------------------------------------
