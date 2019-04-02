@@ -15,6 +15,7 @@ import Control.Monad.Trans.Writer
 import Colonnade
 import Lucid.Colonnade
 import Lucid
+import Lucid.Base
 
 --foldMap :: Monoid m => (a -> m) -> [a] -> m
 --foldMap f [] = mempty
@@ -54,6 +55,8 @@ isEven, isOdd, isDivisibleByThree :: Predicate Int
 isEven = Predicate even
 isOdd  = Predicate odd
 isDivisibleByThree = Predicate (\x -> x `mod` 3 == 0)
+
+---------------------------------------------------------------
 
 -- | Log the steps it took to compute the factorial.
 fact1 :: Int -> Writer String Int
@@ -126,6 +129,8 @@ fact5 n = do
 
 ex5 = runWriter (fact5 10)
 
+---------------------------------------------------------------
+
 data Tree a = Empty | Leaf a | Node (Tree a) a (Tree a)
 
 instance Foldable Tree where
@@ -138,6 +143,8 @@ tree = Node (Leaf 1) 7 (Node (Leaf 3) 4 (Leaf 10))
 exTree1 = foldMap (Any . (==1)) tree
 exTree2 = foldMap (All . (> 5)) tree
 
+---------------------------------------------------------------
+
 combineIO :: Monoid a => IO a -> IO a -> IO a
 combineIO x y = do
   x' <- x
@@ -146,8 +153,35 @@ combineIO x y = do
 
 exIO1 = foldMap (print . Sum) [1..100]
 
-newtype Sort a = Sort { getSorted :: [a] }
-  deriving (Show, Eq)
+---------------------------------------------------------------
+
+-- ))) ((((((((
+data B = B Int Int deriving (Eq, Show)
+
+instance Semigroup B where
+  -- ))) (( ))) (((
+  B a b <> B c d
+    | b <= c = B (a + c - b) d
+    | otherwise = B a (d + b - c)
+
+instance Monoid B where
+  mempty = B 0 0
+
+parse :: Char -> B
+parse '(' = B 0 1
+parse ')' = B 1 0
+parse _   = B 0 0
+
+balanced :: String -> Bool
+balanced xs = foldMap parse xs == mempty
+
+exB1 = balanced "((()))"
+exB2 = balanced "((()))(("
+exB3 = balanced "))((()))())"
+
+---------------------------------------------------------------
+
+newtype Sort a = Sort { getSorted :: [a] } deriving (Show, Eq)
 
 instance Ord a => Semigroup (Sort a) where
   Sort a <> Sort b = Sort (mergeSort a b)
@@ -170,6 +204,8 @@ exSort1 = toSort [1,5,2,3] <> toSort [10,7,8,4]
 
 exSort2 = foldMap (toSort . pure) [5,2,3,1,0,8]
 
+---------------------------------------------------------------
+
 data Person = Person
   { name :: String
   , age :: Int
@@ -185,10 +221,16 @@ colPerson3 = headed "Weight" (toHtml . show . weight)
 colPerson :: Colonnade Headed Person (Html ())
 colPerson = mconcat [colPerson0, colPerson1, colPerson2, colPerson3]
 
-attributes = []
+noAttributes = []
+
+someAttributes = fmap (uncurry makeAttribute)
+  [ ("style","width:100%")
+  ]
 
 people = [Person "Bob" 50 72 150, Person "Alice" 48 67 120]
 
-peopleTable = encodeHtmlTable attributes colPerson people
+peopleTable = encodeHtmlTable noAttributes colPerson people
 
 makePeople = renderToFile "index.html" peopleTable
+
+---------------------------------------------------------------
