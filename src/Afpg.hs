@@ -4,3 +4,4 @@ module Afpg
 
 import Prelude hiding (sum,product,any,all,min,max,foldMap)
 import Afpg.Examples as A
+import Data.Functor.Contravariant

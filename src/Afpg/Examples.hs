@@ -9,6 +9,7 @@ import Data.Monoid
 import Data.Semigroup
 import Prelude hiding (sum,product,any,all,min,max,length)
 import Data.Functor.Contravariant
+import Data.Foldable (fold)
 
 import Control.Monad.Trans.Writer
 
@@ -45,18 +46,39 @@ max :: (Ord a, Bounded a) => [a] -> a
 max = getMax . foldMap Max
 
 helloWorld :: String
-helloWorld = foldMap id ["Hello, ", "World!"]
+helloWorld = fold ["Hello, ", "World!"]
 
 worldHello :: String
 worldHello = getDual . foldMap Dual $ ["Hello, ", "World!"]
 
+--newtype Endo a = Endo (a -> a)
+
+--appEndo :: Endo a -> (a -> a)
+--appEndo (Endo f) = f
+
+--{ appEndo :: a -> a }
+
 endoSum :: Num a => [a] -> a
 endoSum = flip appEndo 0 . foldMap (Endo . (+))
+
+--flip :: (a -> b -> c) -> b -> a -> c
+--flip f b a = f a b
 
 isEven, isOdd, isDivisibleByThree :: Predicate Int
 isEven = Predicate even
 isOdd  = Predicate odd
 isDivisibleByThree = Predicate (\x -> x `mod` 3 == 0)
+
+isEvenAndOdd :: Predicate Int
+isEvenAndOdd = mconcat [ isEven, isOdd ]
+
+--newtype Predicate a = Predicate { getPredicate :: a -> Bool }
+
+--instance Semigroup (Predicate a) where
+--  Predicate f <> Predicate g = Predicate $ \x -> f x && g x
+
+--instance Monoid (Predicate a) where
+--  mempty = const True
 
 ---------------------------------------------------------------
 
@@ -113,6 +135,27 @@ fact4 n = do
   pure r
 
 ex4 = runWriter (fact4 10)
+
+{-
+type Prod a b = (a,b)
+
+data Bool = True | False
+
+data Either a b = Left a | Right b
+
+type Foo = Either Bool ()
+
+type Foo = Maybe Bool
+
+data Unit = Unit
+data () = ()
+
+x :: Int64
+0,1,
+
+instance (Semigroup a, Semigroup b) => Semigroup (a,b) where
+  (x,y) <> (x',y') = (x <> x', y <> y')
+-}
 
 tellFst a = tell $ (a,mempty)
 tellSnd b = tell $ (mempty,b)
@@ -175,7 +218,7 @@ parse ')' = B 1 0
 parse _   = B 0 0
 
 balanced :: String -> Bool
-balanced xs = foldMap parse xs == mempty
+balanced xs = foldMap parse xs == B 0 0 
 
 exB1 = balanced "((()))"
 exB2 = balanced "((()))(("
@@ -231,7 +274,7 @@ someAttributes = fmap (uncurry makeAttribute)
 
 people = [Person "Bob" 50 72 150, Person "Alice" 48 67 120]
 
-peopleTable = encodeHtmlTable someAttributes colPerson people
+peopleTable = encodeHtmlTable noAttributes colPerson people
 
 htmlOutput = "index.html"
 
